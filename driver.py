@@ -1,13 +1,16 @@
 # Proper test driver for the 10moons graphics tablet
 
+import os
+
 # Specification of the device https://python-evdev.readthedocs.io/en/latest/
 from evdev import UInput, ecodes, AbsInfo
 # Establish usb communication with device
 import usb
 import yaml
 
+path = os.path.join(os.path.dirname(__file__), "config.yaml")
 # Loading tablet configuration
-with open("config.yaml", "r") as f:
+with open(path, "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 
