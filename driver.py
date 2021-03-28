@@ -1,6 +1,7 @@
 # Proper test driver for the 10moons graphics tablet
 
 import os
+import sys
 
 # Specification of the device https://python-evdev.readthedocs.io/en/latest/
 from evdev import UInput, ecodes, AbsInfo
@@ -15,20 +16,28 @@ with open(path, "r") as f:
 
 
 # Get the required ecodes from configuration
-required_ecodes = []
+pen_codes = []
+btn_codes = []
 for k, v in config["actions"].items():
+    codes = btn_codes if k == "tablet_buttons" else pen_codes
     if isinstance(v, list):
-        required_ecodes.extend(v)
+        codes.extend(v)
     else:
-        required_ecodes.append(v)
+        codes.append(v)
+
 
 temp = []
-for c in required_ecodes:
+for c in pen_codes:
     temp.extend([ecodes.ecodes[x] for x in c.split("+")])
-required_ecodes = temp
+pen_codes = temp
+
+temp = []
+for c in btn_codes:
+    temp.extend([ecodes.ecodes[x] for x in c.split("+")])
+btn_codes = temp
 
 pen_events = {
-    ecodes.EV_KEY: required_ecodes,
+    ecodes.EV_KEY: pen_codes,
     ecodes.EV_ABS: [
         #AbsInfo input: value, min, max, fuzz, flat
         (ecodes.ABS_X, AbsInfo(0, 0, config['pen']['max_x'], 0, 0, config["pen"]["resolution_x"])),         
@@ -36,6 +45,8 @@ pen_events = {
         (ecodes.ABS_PRESSURE, AbsInfo(0, 0, config['pen']['max_pressure'], 0, 0, 0))
     ],
 }
+
+btn_events = {ecodes.EV_KEY: btn_codes}
 
 # Find the device
 dev = usb.core.find(idVendor=config["vendor_id"], idProduct=config["product_id"])
@@ -54,6 +65,7 @@ for j in [0, 1, 2]:
 dev.set_configuration()
 
 vpen = UInput(events=pen_events, name=config["xinput_name"], version=0x3)
+vbtn = UInput(events=btn_events, name=config["xinput_name"] + "_buttons", version=0x3)
 
 pressed = -1
 
@@ -88,11 +100,17 @@ while True:
             key_codes = config["actions"]["tablet_buttons"][pressed].split("+")
             for key in key_codes:
                 act = ecodes.ecodes[key]
-                vpen.write(ecodes.EV_KEY, act, press_type)
+                vbtn.write(ecodes.EV_KEY, act, press_type)
         # Flush
         vpen.syn()
+        vbtn.syn()
     except usb.core.USBError as e:
         if e.args[0] == 19:
             vpen.close()
             raise Exception('Device has been disconnected')
-
+    except KeyboardInterrupt:
+    	vpen.close()
+    	vbtn.close()
+    	sys.exit("\nDriver terminated successfully.")
+    except Excception as e:
+    	print(e)
