@@ -16,3 +16,6 @@ actions:
         - KEY_LEFTCTRL+KEY_A
         - KEY_C
         - KEY_D
+settings:
+    swap_axis: false
+    swap_directions: false
