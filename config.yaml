@@ -18,4 +18,5 @@ actions:
         - KEY_D
 settings:
     swap_axis: false
-    swap_directions: false
+    swap_direction_x: true
+    swap_direction_y: false

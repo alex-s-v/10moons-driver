@@ -40,9 +40,9 @@ pen_events = {
     ecodes.EV_KEY: pen_codes,
     ecodes.EV_ABS: [
         #AbsInfo input: value, min, max, fuzz, flat
-        (ecodes.ABS_X, AbsInfo(0, 0, config['pen']['max_x'], 0, 0, config["pen"]["resolution_x"])),         
-        (ecodes.ABS_Y, AbsInfo(0, 0, config['pen']['max_y'], 0, 0, config["pen"]["resolution_y"])),
-        (ecodes.ABS_PRESSURE, AbsInfo(0, 0, config['pen']['max_pressure'], 0, 0, 0))
+        (ecodes.ABS_X, AbsInfo(0, 0, config["pen"]["max_x"], 0, 0, config["pen"]["resolution_x"])),         
+        (ecodes.ABS_Y, AbsInfo(0, 0, config["pen"]["max_y"], 0, 0, config["pen"]["resolution_y"])),
+        (ecodes.ABS_PRESSURE, AbsInfo(0, 0, config["pen"]["max_pressure"], 0, 0, 0))
     ],
 }
 
@@ -69,36 +69,18 @@ vbtn = UInput(events=btn_events, name=config["xinput_name"] + "_buttons", versio
 
 pressed = -1
 
-max_x = config['pen']['max_x']
-max_y = config['pen']['max_y']
-
-# Standart directions
-decode_x = lambda data: max_x - (data[5] * 255 + data[4])
-decode_y = lambda data: data[3] * 255 + data[2]
-
-if config["settings"]["swap_directions"]:
-    if config["settings"]["swap_axis"]:
-        # Inverse axis and inverse directions
-        decode_x = lambda data: max_x - (data[3] * 255 + data[2])
-        decode_y = lambda data: data[5] * 255 + data[4]
-    else:
-        # Inverse directions
-        decode_x = lambda data: data[5] * 255 + data[4]
-        decode_y = lambda data: max_y - (data[3] * 255 + data[2])
-elif config["settings"]["swap_axis"]:
-    # Inverse axis
-    decode_x = lambda data: data[3] * 255 + data[2]
-    decode_y = lambda data: max_y - (data[5] * 255 + data[4])
+# Direction and axis configuration
+max_x = config["pen"]["max_x"] * config["settings"]["swap_direction_x"]
+max_y = config["pen"]["max_y"] * config["settings"]["swap_direction_y"]
+x1, x2, y1, y2 = (3, 2, 5, 4) if config["settings"]["swap_axis"] else (5, 4, 3, 2)
 
 # Infinite loop
 while True:
     try:
         data = dev.read(ep.bEndpointAddress, ep.wMaxPacketSize)
         if data[1] in [192, 193]: # Pen actions
-
-            pen_x = decode_x(data)
-            pen_y = decode_y(data)
-
+            pen_x = abs(max_x - (data[x1] * 255 + data[x2]))
+            pen_y = abs(max_y - (data[y1] * 255 + data[y2]))
             pen_pressure = data[7] * 255 + data[6]
             vpen.write(ecodes.EV_ABS, ecodes.ABS_X, pen_x)
             vpen.write(ecodes.EV_ABS, ecodes.ABS_Y, pen_y)
@@ -130,7 +112,7 @@ while True:
     except usb.core.USBError as e:
         if e.args[0] == 19:
             vpen.close()
-            raise Exception('Device has been disconnected')
+            raise Exception("Device has been disconnected")
     except KeyboardInterrupt:
     	vpen.close()
     	vbtn.close()

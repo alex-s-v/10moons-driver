@@ -41,6 +41,8 @@ You may need to change the *vendor_id* and the *product_id* but I'm not sure (Yo
 
 Buttons assigned from in the order from left to right. You can assign to them any button on the keyboard and their combinations separating them with a plus (+) sign.
 
+If you find that using this driver with your tablet results in reverse axis or directions (or both), you can modify parameters *swap_axis*, *swap_direction_x*, and *swap_direction_y* by changing false to true and another way around.
+
 To list all the possible key codes you may run:
 ```
 python -c "from evdev import ecodes; print([x for x in dir(ecodes) if 'KEY' in x])"
